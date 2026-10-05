@@ -35,6 +35,9 @@ public static class Piece
     public const int BlackRook = Rook | (Black << ColorShift);
     public const int BlackQueen = Queen | (Black << ColorShift);
     public const int BlackKing = King | (Black << ColorShift);
+    
+    // a piece is a 4 bit number thus could have 16 values (even though some are unused)
+    public const int CodeCount = 16;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int MakePiece(int color, int type)
