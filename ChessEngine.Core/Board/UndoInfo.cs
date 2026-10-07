@@ -1,4 +1,4 @@
-﻿namespace ChessEngine.Core;
+﻿namespace ChessEngine.Core.Board;
 
 public readonly struct UndoInfo(int capturedPiece, int castlingRights, int enPassantSquare, int halfmoveClock, ulong hash)
 {

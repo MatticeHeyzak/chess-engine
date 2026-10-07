@@ -1,4 +1,6 @@
-﻿namespace ChessEngine.Core;
+﻿using ChessEngine.Core.Main;
+
+namespace ChessEngine.Core.Board;
 
 public class Board
 {

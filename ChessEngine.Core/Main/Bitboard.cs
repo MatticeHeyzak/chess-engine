@@ -1,8 +1,8 @@
-﻿using System.Runtime.CompilerServices;
-using System.Numerics;
+﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace ChessEngine.Core;
+namespace ChessEngine.Core.Main;
 
 public static class Bitboard
 {

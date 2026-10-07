@@ -1,4 +1,5 @@
 ﻿using ChessEngine.Core;
+using ChessEngine.Core.Board;
 using ChessEngine.Ui;
 using ChessEngine.Ui.Renderer;
 

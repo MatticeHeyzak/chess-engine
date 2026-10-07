@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace ChessEngine.Core;
+namespace ChessEngine.Core.Main;
 
 public static class Piece
 {
