@@ -17,12 +17,12 @@ public static class Zobrist
     
     static Zobrist()
     {
-        var state = Seed;
+        var rng = new XorShift64(Seed);
 
-        Fill(PieceKeys, ref state);
-        Fill(CastlingKeys, ref state);
-        Fill(EnPassantKeys, ref state);
-        SideToMove = Next(ref state);
+        Fill(PieceKeys, ref rng);
+        Fill(CastlingKeys, ref rng);
+        Fill(EnPassantKeys, ref rng);
+        SideToMove = rng.Next();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,18 +37,9 @@ public static class Zobrist
     public static ulong EnPassantFile(int file)
         => EnPassantKeys[file];
 
-    private static void Fill(Span<ulong> keys, ref ulong state)
+    private static void Fill(Span<ulong> keys, ref XorShift64 rng)
     {
         for (var i = 0; i < keys.Length; i++)
-            keys[i] = Next(ref state);
-    }
-    
-    /// <summary>SplitMix64 (Steele, Lea, Flood).</summary>
-    private static ulong Next(ref ulong state)
-    {
-        var z = state += 0x9E3779B97F4A7C15UL;
-        z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
-        z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
-        return z ^ (z >> 31);
+            keys[i] = rng.Next();
     }
 }
