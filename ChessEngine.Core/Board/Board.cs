@@ -182,7 +182,7 @@ public class Board
 
         hash ^= Zobrist.Castling(Castling);
         
-        if (EnPassantSquare != Piece.None)
+        if (EnPassantSquare != Square.None)
             hash ^= Zobrist.EnPassantFile(Square.FileOf(EnPassantSquare));
 
         if (SideToMove != Piece.Black)
@@ -204,7 +204,7 @@ public class Board
         
         SideToMove = Piece.White;
         Castling = CastlingRights.None;
-        EnPassantSquare = Piece.None;
+        EnPassantSquare = Square.None;
         HalfmoveClock = 0;
         FullmoveNumber = 1;
         Hash = 0;
