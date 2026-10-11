@@ -2,7 +2,7 @@
 
 namespace ChessEngine.Core.Board;
 
-public class Board
+public sealed class Board
 {
     private const int MaxPly = 2048;
 
