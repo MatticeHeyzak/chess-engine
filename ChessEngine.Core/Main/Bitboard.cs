@@ -16,7 +16,7 @@ public static class Bitboard
     public const ulong FileG = FileF << 1;
     public const ulong FileH = FileG << 1;
     
-    public static ulong[] Files = [
+    public static readonly ulong[] Files = [
         FileA, FileB, FileC, FileD, FileE, FileF, FileG, FileH
     ];
 
@@ -30,7 +30,7 @@ public static class Bitboard
     public const ulong Rank7 = Rank6 << 8;
     public const ulong Rank8 = Rank7 << 8;
     
-    public static ulong[] Ranks = [
+    public static readonly ulong[] Ranks = [
         Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8
     ];
 
