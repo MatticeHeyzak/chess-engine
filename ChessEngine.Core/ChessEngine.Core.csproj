@@ -9,8 +9,4 @@
     <ItemGroup>
         <InternalsVisibleTo Include="ChessEngine.Test" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="MoveGen\" />
-    </ItemGroup>
 </Project>
