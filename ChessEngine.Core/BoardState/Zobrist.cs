@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using ChessEngine.Core.Main;
 
-namespace ChessEngine.Core.Board;
+namespace ChessEngine.Core.BoardState;
 
 // Hashes a single board state to detect threefold repetition
 public static class Zobrist

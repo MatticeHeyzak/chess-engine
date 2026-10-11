@@ -1,5 +1,4 @@
-﻿using ChessEngine.Core;
-using ChessEngine.Core.Board;
+﻿using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
 
 namespace ChessEngine.Ui.Renderer;

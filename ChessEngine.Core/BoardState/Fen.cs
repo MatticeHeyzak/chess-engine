@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using ChessEngine.Core.Main;
 
-namespace ChessEngine.Core.Board;
+namespace ChessEngine.Core.BoardState;
 
 public static class Fen
 {

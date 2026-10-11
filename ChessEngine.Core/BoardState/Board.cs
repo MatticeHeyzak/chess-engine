@@ -1,6 +1,6 @@
 ﻿using ChessEngine.Core.Main;
 
-namespace ChessEngine.Core.Board;
+namespace ChessEngine.Core.BoardState;
 
 public sealed class Board
 {
