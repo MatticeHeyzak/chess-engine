@@ -10,7 +10,7 @@ public static class Zobrist
 {
     private static readonly ulong[] PieceKeys = new ulong[Piece.CodeCount * Square.Count];
     private static readonly ulong[] CastlingKeys = new ulong[CastlingRights.Count];
-    private static readonly ulong[] EnPassentKeys = new ulong[8];
+    private static readonly ulong[] EnPassantKeys = new ulong[8];
 
     public static readonly ulong SideToMove;
     
@@ -18,7 +18,7 @@ public static class Zobrist
     {
         FillRandom(PieceKeys);
         FillRandom(CastlingKeys);
-        FillRandom(EnPassentKeys);
+        FillRandom(EnPassantKeys);
 
         Span<ulong> single = stackalloc ulong[1];
         FillRandom(single);
@@ -35,7 +35,7 @@ public static class Zobrist
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong EnPassantFile(int file)
-        => EnPassentKeys[file];
+        => EnPassantKeys[file];
     
     private static void FillRandom(Span<ulong> keys)
         => RandomNumberGenerator.Fill(MemoryMarshal.AsBytes(keys));
