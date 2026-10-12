@@ -7,10 +7,47 @@ public static class MoveGenerator
 {
     public static void Generate(Board board, ref MoveList list)
     {
-        if (board.SideToMove == Piece.White)
+        var us = board.SideToMove;
+        var own = board.ColorOccupancy(us);
+        var enemy = board.ColorOccupancy(us ^ 1);
+        
+        if (us == Piece.White)
             AddPawnMoves<White>(board, ref list);
         else
             AddPawnMoves<Black>(board, ref list);
+
+        AddKnightMoves(board, ref list, us, own, enemy);
+        AddKingMoves(board, ref list, us, own, enemy);
+    }
+
+    private static void AddKnightMoves(Board board, ref MoveList list, int us, ulong own, ulong enemy)
+    {
+        var knights = board.GetBitboard(us, Piece.Knight);
+
+        while (knights != 0)
+        {
+            var from = Bitboard.PopLeastSignificantBit(ref knights);
+            AddMoves(ref list, from, Attacks.Knight(from) & ~own, enemy);
+        }
+    }
+
+    private static void AddKingMoves(Board board, ref MoveList list, int us, ulong own, ulong enemy)
+    {
+        var from = board.KingSquare(us);
+        AddMoves(ref list, from, Attacks.King(from) & ~own, enemy);
+    }
+
+    // Turns a target bitboard into moves.
+    private static void AddMoves(ref MoveList list, int from, ulong targets, ulong enemy)
+    {
+        var captures = targets & enemy;
+        var quiets = targets & ~enemy;
+        
+        while (captures != 0)
+            list.Add(new Move(from, Bitboard.PopLeastSignificantBit(ref captures), MoveFlag.Capture));
+        
+        while (quiets != 0)
+            list.Add(new Move(from, Bitboard.PopLeastSignificantBit(ref quiets)));
     }
 
     private static void AddPawnMoves<TColor>(Board board, ref MoveList list) where TColor : struct, IColor
