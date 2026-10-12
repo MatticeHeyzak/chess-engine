@@ -13,7 +13,8 @@ IRenderer[] renderers =
 [
     new BoardRenderer(layout),
     new MoveHighlightRenderer(layout, interaction),
-    new PieceRenderer(board, layout)
+    new PieceRenderer(board, layout),
+    new PromotionPickerRenderer(board, layout, interaction)
 ];
 
 var app = new ChessApplication(renderers, [interaction]);

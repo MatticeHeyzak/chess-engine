@@ -24,22 +24,29 @@ public static class MoveGenerator
     private static void AddPawnPushes<TColor>(Board board, ref MoveList list, ulong pawns) where TColor : struct, IColor
     {
         var empty = ~board.Occupancy;
+        var promotionRank = ~TColor.PromotionRank;
 
         var single = TColor.ShiftUp(pawns) & empty;
         var doublePush = TColor.ShiftUp(single & TColor.ThirdRank) & empty;
         
         AddPawnTargets(ref list, single & ~TColor.PromotionRank, TColor.Up, MoveFlag.Quiet);
+        AddPromotionTargets(ref list, single & promotionRank, TColor.Us, MoveFlag.PromoKnight);
         AddPawnTargets(ref list, doublePush, TColor.Up * 2, MoveFlag.DoublePawnPush);
     }
 
     private static void AddPawnCaptures<TColor>(Board board, ref MoveList list, ulong pawns)
         where TColor : struct, IColor
     {
-        // Captures onto the last rank are promotions, so they are skipped for now
-        var enemy = board.ColorOccupancy(TColor.Us ^ 1) & ~TColor.PromotionRank;    
+        var enemy = board.ColorOccupancy(TColor.Us ^ 1);
+        var promotionRank = TColor.PromotionRank;
+
+        var right = TColor.ShiftUpRight(pawns) & enemy;
+        var left = TColor.ShiftUpLeft(pawns) & enemy;
         
-        AddPawnTargets(ref list, TColor.ShiftUpRight(pawns) & enemy, TColor.UpRight, MoveFlag.Capture);
-        AddPawnTargets(ref list, TColor.ShiftUpLeft(pawns) & enemy, TColor.UpLeft, MoveFlag.Capture);
+        AddPawnTargets(ref list, right & ~promotionRank, TColor.UpRight, MoveFlag.Capture);
+        AddPawnTargets(ref list, left & ~promotionRank, TColor.UpLeft, MoveFlag.Capture);
+        AddPromotionTargets(ref list, right & promotionRank, TColor.UpRight, MoveFlag.PromoKnightCapture);
+        AddPromotionTargets(ref list, left & promotionRank, TColor.UpLeft, MoveFlag.PromoKnightCapture);
     }
     
     // `delta` is the square-index distance from origin to target, so origin = target - delta
@@ -49,6 +56,18 @@ public static class MoveGenerator
         {
             var to = Bitboard.PopLeastSignificantBit(ref targets);
             list.Add(new Move(to - delta, to, flag));
+        }
+    }
+
+    private static void AddPromotionTargets(ref MoveList list, ulong targets, int delta, int knightFlag)
+    {
+        while (targets != 0)
+        {
+            var to = Bitboard.PopLeastSignificantBit(ref targets);
+            var from = to - delta;
+            
+            for (var offset = 3; offset >= 0; offset--)
+                list.Add(new Move(from, to, knightFlag + offset));
         }
     }
 }
