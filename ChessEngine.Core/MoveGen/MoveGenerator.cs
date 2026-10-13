@@ -1,4 +1,5 @@
-﻿using ChessEngine.Core.BoardState;
+﻿using System.Runtime.CompilerServices;
+using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
 
 namespace ChessEngine.Core.MoveGen;
@@ -18,6 +19,7 @@ public static class MoveGenerator
 
         AddKnightMoves(board, ref list, us, own, enemy);
         AddKingMoves(board, ref list, us, own, enemy);
+        AddSliderMoves(board, ref list, us, own, enemy);
     }
 
     private static void AddKnightMoves(Board board, ref MoveList list, int us, ulong own, ulong enemy)
@@ -105,6 +107,28 @@ public static class MoveGenerator
             
             for (var offset = 3; offset >= 0; offset--)
                 list.Add(new Move(from, to, knightFlag + offset));
+        }
+    }
+    
+    // Sliders
+    private static void AddSliderMoves(Board board, ref MoveList list, int us, ulong own, ulong enemy)
+    {
+        var occupancy = board.Occupancy;
+        var queens = board.GetBitboard(us, Piece.Queen);
+
+        AddSliderMoves(ref list, board.GetBitboard(us, Piece.Bishop) | queens, occupancy, ~own, enemy, diagonal: true);
+        AddSliderMoves(ref list, board.GetBitboard(us, Piece.Rook) | queens, occupancy, ~own, enemy, diagonal: false);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void AddSliderMoves(
+        ref MoveList list, ulong pieces, ulong occupancy, ulong allowed, ulong enemy, bool diagonal)
+    {
+        while (pieces != 0)
+        {
+            var from = Bitboard.PopLeastSignificantBit(ref pieces);
+            var attacks = diagonal ? Attacks.Bishop(from, occupancy) : Attacks.Rook(from, occupancy);
+            AddMoves(ref list, from, attacks & allowed, enemy);
         }
     }
 }
