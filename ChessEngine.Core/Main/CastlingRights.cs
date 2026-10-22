@@ -21,6 +21,7 @@ public static class CastlingRights
     private static int[] BuildUpdateMask()
     {
         var mask = new int[Square.Count];
+        Array.Fill(mask, All);
 
         // White
         mask[Square.E1] = All & ~(WhiteKingSide | WhiteQueenSide);
