@@ -29,6 +29,9 @@ public static class Attacks
 
     private static readonly ulong[] KnightTable = BuildLeaperTable(KnightDeltas);
     private static readonly ulong[] KingTable = BuildLeaperTable(KingDeltas);
+    private static readonly ulong[] PawnTable = BuildPawnTable();
+    private static readonly ulong[] BetweenTable = new ulong[Square.Count * Square.Count];
+    private static readonly ulong[] LineTable = new ulong[Square.Count * Square.Count];
 
     private static readonly Magic[] RookMagics = new Magic[Square.Count];
     private static readonly Magic[] BishopMagics = new Magic[Square.Count];
@@ -39,6 +42,9 @@ public static class Attacks
     {
         InitMagics(RookMagics, RookTable, RookDirs, new XorShift64(0x1234ABCD5678EF01UL));
         InitMagics(BishopMagics, BishopTable, BishopDirs, new XorShift64(0x0FEDCBA987654321UL));
+        
+        BuildBetweenAndLine(RookDirs);
+        BuildBetweenAndLine(BishopDirs);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -46,6 +52,18 @@ public static class Attacks
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong King(int square) => KingTable[square];
+    
+    // Squares attacked by a pawn of `color` standing on `square`
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ulong Pawn(int color, int square) => PawnTable[(color << 6) + square];
+
+    // Squares strictly between a and b, or 0 if they are not on a shared rank, file or diagonal
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ulong Between(int a, int b) => BetweenTable[(a << 6) + b];
+
+    // The full edge-to-edge line through a and b (including both), or 0 if not alighed.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ulong Line(int a, int b) => LineTable[(a << 6) + b];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong Rook(int square, ulong occupancy)
@@ -88,6 +106,31 @@ public static class Attacks
         }
 
         return table;
+    }
+
+    private static ulong[] BuildPawnTable()
+    {
+        var table = new ulong[Square.Count * 2];
+        BuildLeaperTable([(-1, 1), (1, 1)]).CopyTo(table, Piece.White * Square.Count);
+        BuildLeaperTable([(-1, -1), (1, -1)]).CopyTo(table, Piece.Black * Square.Count);
+        return table;
+    }
+
+    private static void BuildBetweenAndLine((int Df, int Dr)[] dirs)
+    {
+        for (var a = 0; a < Square.Count; a++)
+        for (var b = 0; b < Square.Count; b++)
+        {
+            var bitA = Bitboard.FromSquare(a);
+            var bitB = Bitboard.FromSquare(b);
+            var raysA = Slide(a, 0, dirs);
+
+            if (a == b || (raysA & bitB) == 0)
+                continue;
+            
+            BetweenTable[(a << 6) + b] = Slide(a, bitB, dirs) & Slide(b, bitA, dirs);
+            LineTable[(a << 6) + b] = (raysA & Slide(b, 0, dirs)) | bitA | bitB;
+        }
     }
 
     private static ulong Slide(int square, ulong occupancy, (int Df, int Dr)[] dirs)
