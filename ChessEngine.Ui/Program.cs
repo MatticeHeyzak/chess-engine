@@ -1,4 +1,5 @@
 ﻿using ChessEngine.Core.BoardState;
+using ChessEngine.Core.Main;
 using ChessEngine.Ui;
 using ChessEngine.Ui.Renderer;
 using ChessEngine.Ui.Updates;
@@ -17,5 +18,7 @@ IRenderer[] renderers =
     new PromotionPickerRenderer(board, layout, interaction)
 ];
 
-var app = new ChessApplication(renderers, [interaction]);
+var bot = new BotController(board, Piece.Black, thinkTimeMs: 1000);
+
+var app = new ChessApplication(renderers, [interaction, bot]);
 app.Run();
