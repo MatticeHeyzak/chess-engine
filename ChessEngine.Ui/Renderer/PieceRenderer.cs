@@ -1,4 +1,4 @@
-﻿using ChessEngine.Core.BoardState;
+using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
 
 namespace ChessEngine.Ui.Renderer;
@@ -6,13 +6,13 @@ namespace ChessEngine.Ui.Renderer;
 public class PieceRenderer(Board board, BoardLayout layout) : IRenderer
 {
     private readonly PieceTextures _textures = new();
-    
+
     public void Load()
     {
         var directory = Path.Combine(AppContext.BaseDirectory, "Assets");
         _textures.Load(directory);
     }
-    
+
     public void Unload() => _textures.Unload();
 
     public void Draw()

@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
 using ChessEngine.Ui.Updates;

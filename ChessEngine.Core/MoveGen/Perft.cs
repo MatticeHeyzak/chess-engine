@@ -1,8 +1,8 @@
-﻿using ChessEngine.Core.BoardState;
-using ChessEngine.Core.Main;
+using ChessEngine.Core.BoardState;
 
 namespace ChessEngine.Core.MoveGen;
 
+/// <summary>Move-generation correctness and speed test: counts the leaf nodes of the legal move tree.</summary>
 public static class Perft
 {
     public static ulong Run(Board board, int depth)
@@ -12,7 +12,7 @@ public static class Perft
 
         var list = new MoveList();
         MoveGenerator.Generate(board, ref list);
-        
+
         // Bulk counting: at depth 1 the number of legal moves is the answer.
         if (depth == 1)
             return (ulong)list.Count;
@@ -30,3 +30,4 @@ public static class Perft
         return nodes;
     }
 }
+

@@ -1,12 +1,28 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
 
 namespace ChessEngine.Core.MoveGen;
 
+/// <summary>
+/// Generates strictly legal moves directly (no pseudo-legal generate-then-filter step):
+/// it computes the squares the enemy attacks, the pieces pinned to the king and the check mask up front,
+/// so every emitted move is already legal. That removes make/unmake legality probes from the search.
+/// </summary>
 public static class MoveGenerator
 {
-    // Fully legal moves.
+    // Files of the squares castling cares about, as offsets from the first square of the back rank.
+    private const int QueenSideKnightFile = 1; // b
+    private const int QueenSideKingTargetFile = 2; // c
+    private const int QueenSideRookTargetFile = 3; // d
+    private const int KingFile = 4; // e
+    private const int KingSideRookTargetFile = 5; // f
+    private const int KingSideKingTargetFile = 6; // g
+
+    /// <summary>Knight, bishop, rook, queen: the four moves emitted for every promotion.</summary>
+    private const int PromotionChoices = 4;
+
+    /// <summary>Adds every legal move of the side to move to <paramref name="list"/>.</summary>
     public static void Generate(Board board, ref MoveList list)
     {
         if (board.SideToMove == Piece.White)
@@ -15,7 +31,7 @@ public static class MoveGenerator
             Generate<Black, White>(board, ref list);
     }
 
-    // Bitboard of every piece of `byColor` that attacks `square`, for a given occupancy.
+    /// <summary>Bitboard of every piece of <paramref name="byColor"/> that attacks <paramref name="square"/>, for a given occupancy.</summary>
     public static ulong AttackersTo(Board board, int square, int byColor, ulong occupancy)
     {
         var queens = board.GetBitboard(byColor, Piece.Queen);
@@ -55,20 +71,11 @@ public static class MoveGenerator
         if (Bitboard.HasMoreThanOneBit(checkers))
             return;
 
-        var checkMask = Bitboard.Full;
-        if (checkers != 0)
-            checkMask = Attacks.Between(kingSquare, Bitboard.LeastSignificantBit(checkers)) | checkers;
-
-        var pinned = ComputePinned(board, us, them, kingSquare, occupancy, own);
+        var checkMask = ComputeCheckMask(kingSquare, checkers);
+        var pinned = ComputePinned(board, them, kingSquare, occupancy, own);
         var targets = ~own & checkMask;
 
-        // Knights: a pinned knight can never move.
-        var knights = board.GetBitboard(us, Piece.Knight) & ~pinned;
-        while (knights != 0)
-        {
-            var from = Bitboard.PopLeastSignificantBit(ref knights);
-            AddMoves(ref list, from, Attacks.Knight(from) & targets, enemy);
-        }
+        AddKnightMoves(board, us, ref list, pinned, targets, enemy);
 
         // Queens are in both sets, so each is handled once as a diagonal and once as an orthogonal slider.
         var queens = board.GetBitboard(us, Piece.Queen);
@@ -84,9 +91,9 @@ public static class MoveGenerator
             AddCastling<TUs>(board, ref list, occupancy, danger);
     }
 
-    // Danger map and pins
+    // Danger map, check mask and pins
 
-    // Every square attacked by a piece of TThem.
+    /// <summary>Every square attacked by a piece of <typeparamref name="TThem"/>.</summary>
     private static ulong ComputeDanger<TThem>(Board board, ulong occupancy) where TThem : struct, IColor
     {
         var them = TThem.Us;
@@ -118,9 +125,24 @@ public static class MoveGenerator
         return attacks;
     }
 
-    // A piece is pinned when it is the only piece between our king and an enemy slider
-    // that attacks along that line.
-    private static ulong ComputePinned(Board board, int us, int them, int kingSquare, ulong occupancy, ulong own)
+    /// <summary>
+    /// Where a non-king move must land to resolve a single check: capture the checker or block its ray.
+    /// With no check every square is allowed.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong ComputeCheckMask(int kingSquare, ulong checkers)
+    {
+        if (checkers == 0)
+            return Bitboard.Full;
+
+        return Attacks.Between(kingSquare, Bitboard.LeastSignificantBit(checkers)) | checkers;
+    }
+
+    /// <summary>
+    /// A piece is pinned when it is the only piece between our king and an enemy slider
+    /// that attacks along that line.
+    /// </summary>
+    private static ulong ComputePinned(Board board, int them, int kingSquare, ulong occupancy, ulong own)
     {
         var queens = board.GetBitboard(them, Piece.Queen);
         var snipers = (Attacks.Rook(kingSquare, 0) & (board.GetBitboard(them, Piece.Rook) | queens))
@@ -140,7 +162,20 @@ public static class MoveGenerator
         return pinned;
     }
 
-    // Sliders
+    // Knights and sliders
+
+    /// <summary>A pinned knight can never move, so pinned knights are skipped entirely.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void AddKnightMoves(Board board, int us, ref MoveList list, ulong pinned, ulong targets, ulong enemy)
+    {
+        var knights = board.GetBitboard(us, Piece.Knight) & ~pinned;
+
+        while (knights != 0)
+        {
+            var from = Bitboard.PopLeastSignificantBit(ref knights);
+            AddMoves(ref list, from, Attacks.Knight(from) & targets, enemy);
+        }
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void AddSliderMoves(
@@ -190,7 +225,7 @@ public static class MoveGenerator
         AddPromotionTargets(ref list, left & promotionRank, TUs.UpLeft, MoveFlag.PromoKnightCapture, pinned, kingSquare);
     }
 
-    // `delta` is the square-index distance from origin to target, so origin = target - delta.
+    /// <param name="delta">Square-index distance from origin to target, so origin = target - delta.</param>
     private static void AddPawnTargets(
         ref MoveList list, ulong targets, int delta, int flag, ulong pinned, int kingSquare)
     {
@@ -206,7 +241,8 @@ public static class MoveGenerator
         }
     }
 
-    // `knightFlag` is PromoKnight or PromoKnightCapture. Adding 0..3 gives knight, bishop, rook, queen.
+    /// <param name="knightFlag"><see cref="MoveFlag.PromoKnight"/> or <see cref="MoveFlag.PromoKnightCapture"/>.
+    /// Adding 0..3 gives knight, bishop, rook, queen; the queen is emitted first.</param>
     private static void AddPromotionTargets(
         ref MoveList list, ulong targets, int delta, int knightFlag, ulong pinned, int kingSquare)
     {
@@ -218,7 +254,7 @@ public static class MoveGenerator
             if (IsPinnedOffLine(pinned, kingSquare, from, to))
                 continue;
 
-            for (var offset = 3; offset >= 0; offset--)
+            for (var offset = PromotionChoices - 1; offset >= 0; offset--)
                 list.Add(new Move(from, to, knightFlag + offset));
         }
     }
@@ -227,9 +263,11 @@ public static class MoveGenerator
     private static bool IsPinnedOffLine(ulong pinned, int kingSquare, int from, int to)
         => Bitboard.IsSet(pinned, from) && !Bitboard.IsSet(Attacks.Line(kingSquare, from), to);
 
-    // The captured pawn is not on the target square, so the check mask and pin lines don't
-    // apply. Instead the position after the capture is simulated, which also catches the
-    // horizontal pin where both pawns leave the same rank.
+    /// <summary>
+    /// The captured pawn is not on the target square, so the check mask and pin lines don't
+    /// apply. Instead the position after the capture is simulated, which also catches the
+    /// horizontal pin where both pawns leave the same rank.
+    /// </summary>
     private static void AddEnPassant<TUs, TThem>(Board board, ref MoveList list, ulong occupancy, int kingSquare)
         where TUs : struct, IColor
         where TThem : struct, IColor
@@ -253,7 +291,10 @@ public static class MoveGenerator
 
     // Castling
 
-    // Only called when not in check. The king may not pass through or land on an attacked square.
+    /// <summary>
+    /// Only called when not in check. The king may not pass through or land on an attacked square,
+    /// and the squares between king and rook must be empty.
+    /// </summary>
     private static void AddCastling<TUs>(Board board, ref MoveList list, ulong occupancy, ulong danger)
         where TUs : struct, IColor
     {
@@ -261,26 +302,32 @@ public static class MoveGenerator
         var rights = board.Castling;
 
         if (CastlingRights.Has(rights, TUs.KingSideRight))
-        {
-            var path = Bitboard.FromSquare(home + 5) | Bitboard.FromSquare(home + 6);
-
-            if ((occupancy & path) == 0 && (danger & path) == 0)
-                list.Add(new Move(home + 4, home + 6, MoveFlag.KingCastle));
-        }
+            AddKingSideCastling(ref list, home, occupancy, danger);
 
         if (CastlingRights.Has(rights, TUs.QueenSideRight))
-        {
-            var empty = Bitboard.FromSquare(home + 1) | Bitboard.FromSquare(home + 2) | Bitboard.FromSquare(home + 3);
-            var safe = Bitboard.FromSquare(home + 2) | Bitboard.FromSquare(home + 3); // b-file may be attacked
+            AddQueenSideCastling(ref list, home, occupancy, danger);
+    }
 
-            if ((occupancy & empty) == 0 && (danger & safe) == 0)
-                list.Add(new Move(home + 4, home + 2, MoveFlag.QueenCastle));
-        }
+    private static void AddKingSideCastling(ref MoveList list, int home, ulong occupancy, ulong danger)
+    {
+        var path = Bitboard.FromSquare(home + KingSideRookTargetFile) | Bitboard.FromSquare(home + KingSideKingTargetFile);
+
+        if ((occupancy & path) == 0 && (danger & path) == 0)
+            list.Add(new Move(home + KingFile, home + KingSideKingTargetFile, MoveFlag.KingCastle));
+    }
+
+    private static void AddQueenSideCastling(ref MoveList list, int home, ulong occupancy, ulong danger)
+    {
+        var safe = Bitboard.FromSquare(home + QueenSideKingTargetFile) | Bitboard.FromSquare(home + QueenSideRookTargetFile);
+        var empty = safe | Bitboard.FromSquare(home + QueenSideKnightFile); // the b-file square may be attacked
+
+        if ((occupancy & empty) == 0 && (danger & safe) == 0)
+            list.Add(new Move(home + KingFile, home + QueenSideKingTargetFile, MoveFlag.QueenCastle));
     }
 
     // Shared emitter
 
-    // Captures first, which already gives a rough move ordering for the search later.
+    /// <summary>Emits captures before quiet moves, which already gives a rough move ordering for the search.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void AddMoves(ref MoveList list, int from, ulong targets, ulong enemy)
     {
@@ -294,3 +341,4 @@ public static class MoveGenerator
             list.Add(new Move(from, Bitboard.PopLeastSignificantBit(ref quiets), MoveFlag.Quiet));
     }
 }
+

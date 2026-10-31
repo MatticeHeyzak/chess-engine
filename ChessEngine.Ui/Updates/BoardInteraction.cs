@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
 using ChessEngine.Core.MoveGen;
@@ -9,7 +9,7 @@ namespace ChessEngine.Ui.Updates;
 public sealed class BoardInteraction(Board board, BoardLayout layout) : IUpdatable
 {
     public static readonly int[] PromotionChoices = [Piece.Queen, Piece.Rook, Piece.Bishop, Piece.Knight];
-    
+
     private readonly List<Move> _moves = [];
 
     public int Selected { get; private set; } = Square.None;
@@ -24,7 +24,7 @@ public sealed class BoardInteraction(Board board, BoardLayout layout) : IUpdatab
         var offset = (expandDown ? index : -index) * rect.Height;
         return new Rectangle(rect.X, rect.Y + offset, rect.Width, rect.Height);
     }
-    
+
     public void Update()
     {
         if (!Raylib.IsMouseButtonPressed(MouseButton.Left))
@@ -61,7 +61,7 @@ public sealed class BoardInteraction(Board board, BoardLayout layout) : IUpdatab
         {
             if (move.To != square)
                 continue;
-            
+
             // Four promotion moves share this target: let the user pick one.
             if (move.IsPromotion)
                 PromotionSquare = square;
@@ -114,7 +114,7 @@ public sealed class BoardInteraction(Board board, BoardLayout layout) : IUpdatab
         board.MakeMove(move);
         Deselect();
     }
-    
+
     private void Deselect()
     {
         Selected = Square.None;

@@ -1,4 +1,3 @@
-﻿using System.Security;
 using ChessEngine.Core.BoardState;
 using ChessEngine.Core.MoveGen;
 
@@ -6,7 +5,7 @@ namespace ChessEngine.Test;
 
 public class LegalityTests
 {
-    private const string Start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    private const string Start = Fen.StartPosition;
     private const string Kiwipete = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 
     [Theory]
@@ -25,7 +24,7 @@ public class LegalityTests
     [Fact]
     public void HashAndStateSurviveMakeUnmake()
         => Walk(Fen.Parse(Kiwipete), 3);
-    
+
     private static void Walk(Board board, int depth)
     {
         if (depth == 0)
@@ -38,13 +37,14 @@ public class LegalityTests
         {
             var move = list[i];
             var before = Fen.Export(board);
-            
+
             board.MakeMove(move);
             Assert.Equal(board.ComputeHashFromScratch(), board.Hash);
             Walk(board, depth - 1);
             board.UnmakeMove(move);
-            
+
             Assert.Equal(before, Fen.Export(board));
         }
     }
 }
+

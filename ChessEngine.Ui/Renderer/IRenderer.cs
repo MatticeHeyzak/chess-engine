@@ -1,4 +1,4 @@
-﻿namespace ChessEngine.Ui.Renderer;
+namespace ChessEngine.Ui.Renderer;
 
 public interface IRenderer
 {

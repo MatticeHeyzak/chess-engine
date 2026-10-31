@@ -1,31 +1,16 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace ChessEngine.Core.Main;
 
-public static class MoveFlag
-{
-    public const int Quiet = 0;
-    public const int DoublePawnPush = 1;
-    public const int KingCastle = 2;
-    public const int QueenCastle = 3;
-    public const int Capture = 4;
-    public const int EnPassant = 5;
-
-    public const int PromoKnight = 8;
-    public const int PromoBishop = 9;
-    public const int PromoRook = 10;
-    public const int PromoQueen = 11;
-
-    public const int PromoKnightCapture = 12;
-    public const int PromoBishopCapture = 13;
-    public const int PromoRookCapture = 14;
-    public const int PromoQueenCapture = 15;
-}
-
-// Layout of the 16 bits:
-//    bits 0-5 -> from square (0-63)
-//    bits 6-11 -> to square (0-63)
-//    bits 12-15 flags
+/// <summary>
+/// A move packed into 16 bits:
+/// <list type="bullet">
+/// <item>bits 0-5: from square (0-63)</item>
+/// <item>bits 6-11: to square (0-63)</item>
+/// <item>bits 12-15: <see cref="MoveFlag"/></item>
+/// </list>
+/// The compact size keeps move lists and transposition-table entries small.
+/// </summary>
 public readonly struct Move : IEquatable<Move>
 {
     private const int SquareMask = 0x3F;
@@ -35,10 +20,10 @@ public readonly struct Move : IEquatable<Move>
     private const int CaptureBit = 4;
     private const int PromotionBit = 8;
     private const int PromotionTypeMask = 3;
-    
+
     private readonly ushort _data;
 
-    // The "no move" sentinal. All zeros: a1 -> a1 quiet, which is never legal.
+    /// <summary>The "no move" sentinel. All zeros: a1 -> a1 quiet, which is never legal.</summary>
     public static readonly Move Null = default;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -73,11 +58,12 @@ public readonly struct Move : IEquatable<Move>
     public bool IsDoublePawnPush => Flags == MoveFlag.DoublePawnPush;
     public bool IsKingCastle => Flags == MoveFlag.KingCastle;
     public bool IsCastle => Flags is MoveFlag.KingCastle or MoveFlag.QueenCastle;
-    
-    // Piece TYPE (not code) of the promotion piece. Only valid if IsPromotion.
+
+    /// <summary>Piece TYPE (not code) of the promotion piece. Only valid if <see cref="IsPromotion"/>.</summary>
     public int PromotionPieceType
         => Piece.Knight + (Flags & PromotionTypeMask);
 
+    /// <summary>Long algebraic (UCI) notation, e.g. "e2e4" or "e7e8q".</summary>
     public override string ToString()
     {
         if (IsNull)
@@ -86,18 +72,19 @@ public readonly struct Move : IEquatable<Move>
         var text = Square.ToName(From) + Square.ToName(To);
 
         if (IsPromotion)
-        {
-            text += PromotionPieceType switch
-            {
-                Piece.Knight => 'n',
-                Piece.Bishop => 'b',
-                Piece.Rook => 'r',
-                _ => 'q'
-            };
-        }
+            text += PromotionLetter(PromotionPieceType);
 
         return text;
     }
+
+    private static char PromotionLetter(int pieceType) => pieceType switch
+    {
+        Piece.Knight => 'n',
+        Piece.Bishop => 'b',
+        Piece.Rook => 'r',
+        _ => 'q'
+    };
+
     public bool Equals(Move other) => _data == other._data;
 
     public override bool Equals(object? obj) => obj is Move other && Equals(other);
@@ -108,3 +95,4 @@ public readonly struct Move : IEquatable<Move>
 
     public static bool operator !=(Move left, Move right) => left._data != right._data;
 }
+

@@ -1,4 +1,4 @@
-﻿namespace ChessEngine.Ui.Updates;
+namespace ChessEngine.Ui.Updates;
 
 public interface IUpdatable
 {

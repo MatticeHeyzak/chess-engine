@@ -1,29 +1,30 @@
-﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using ChessEngine.Core.Main;
 
 namespace ChessEngine.Core.MoveGen;
 
+/// <summary>
+/// Precomputed attack sets. Knights, kings and pawns use plain lookup tables; rooks and bishops use
+/// magic bitboards (a multiply-and-shift perfect hash of the blockers), which answers "what does a slider
+/// on this square attack, given this occupancy?" in a few instructions.
+/// </summary>
 public static class Attacks
 {
-    private struct Magic
-    {
-        public ulong Mask; 
-        public ulong Number;
-        public int Shift;
-        public int Offset;
-    }
-
-    // Sizes follow from the masks: sum over squares of 2^(relevent bits).
+    // Sizes follow from the masks: sum over squares of 2^(relevant bits).
     private const int RookTableSize = 102400;
     private const int BishopTableSize = 5248;
-    
+
+    private const int SquareBits = 6; // log2(Square.Count): lets (a << SquareBits) + b index a square-pair table
+
+    private const ulong RookMagicSeed = 0x1234ABCD5678EF01UL;
+    private const ulong BishopMagicSeed = 0x0FEDCBA987654321UL;
+
     private static readonly (int Df, int Dr)[] KnightDeltas =
         [(1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1), (-2, 1), (-1, 2)];
-    
+
     private static readonly (int Df, int Dr)[] KingDeltas =
         [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)];
-    
+
     private static readonly (int Df, int Dr)[] RookDirs = [(1, 0), (-1, 0), (0, 1), (0, -1)];
     private static readonly (int Df, int Dr)[] BishopDirs = [(1, 1), (1, -1), (-1, 1), (-1, -1)];
 
@@ -40,30 +41,30 @@ public static class Attacks
 
     static Attacks()
     {
-        InitMagics(RookMagics, RookTable, RookDirs, new XorShift64(0x1234ABCD5678EF01UL));
-        InitMagics(BishopMagics, BishopTable, BishopDirs, new XorShift64(0x0FEDCBA987654321UL));
-        
+        new MagicGenerator(RookDirs, new XorShift64(RookMagicSeed)).Generate(RookMagics, RookTable);
+        new MagicGenerator(BishopDirs, new XorShift64(BishopMagicSeed)).Generate(BishopMagics, BishopTable);
+
         BuildBetweenAndLine(RookDirs);
         BuildBetweenAndLine(BishopDirs);
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong Knight(int square) => KnightTable[square];
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong King(int square) => KingTable[square];
-    
-    // Squares attacked by a pawn of `color` standing on `square`
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ulong Pawn(int color, int square) => PawnTable[(color << 6) + square];
 
-    // Squares strictly between a and b, or 0 if they are not on a shared rank, file or diagonal
+    /// <summary>Squares attacked by a pawn of <paramref name="color"/> standing on <paramref name="square"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ulong Between(int a, int b) => BetweenTable[(a << 6) + b];
+    public static ulong Pawn(int color, int square) => PawnTable[(color << SquareBits) + square];
 
-    // The full edge-to-edge line through a and b (including both), or 0 if not alighed.
+    /// <summary>Squares strictly between a and b, or 0 if they are not on a shared rank, file or diagonal.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ulong Line(int a, int b) => LineTable[(a << 6) + b];
+    public static ulong Between(int a, int b) => BetweenTable[(a << SquareBits) + b];
+
+    /// <summary>The full edge-to-edge line through a and b (including both), or 0 if not aligned.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ulong Line(int a, int b) => LineTable[(a << SquareBits) + b];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong Rook(int square, ulong occupancy)
@@ -83,8 +84,35 @@ public static class Attacks
     public static ulong Queen(int square, ulong occupancy)
         => Rook(square, occupancy) | Bishop(square, occupancy);
 
+    // Reference implementations that walk the rays; they validate the magic tables in tests.
     internal static ulong SlowRook(int square, ulong occupancy) => Slide(square, occupancy, RookDirs);
     internal static ulong SlowBishop(int square, ulong occupancy) => Slide(square, occupancy, BishopDirs);
+
+    /// <summary>Attacks of a ray-walking piece: each ray runs until the board edge or the first blocker (included).</summary>
+    internal static ulong Slide(int square, ulong occupancy, (int Df, int Dr)[] dirs)
+    {
+        ulong result = 0;
+
+        foreach (var (df, dr) in dirs)
+        {
+            var f = Square.FileOf(square) + df;
+            var r = Square.RankOf(square) + dr;
+
+            while ((uint)f < Square.BoardSize && (uint)r < Square.BoardSize)
+            {
+                var bit = Bitboard.FromSquare(Square.Make(f, r));
+                result |= bit;
+
+                if ((occupancy & bit) != 0)
+                    break;
+
+                f += df;
+                r += dr;
+            }
+        }
+
+        return result;
+    }
 
     private static ulong[] BuildLeaperTable((int Df, int Dr)[] deltas)
     {
@@ -100,7 +128,7 @@ public static class Attacks
                 var f = file + df;
                 var r = rank + dr;
 
-                if ((uint)f < 8 && (uint)r < 8)
+                if ((uint)f < Square.BoardSize && (uint)r < Square.BoardSize)
                     table[square] |= Bitboard.FromSquare(Square.Make(f, r));
             }
         }
@@ -119,113 +147,18 @@ public static class Attacks
     private static void BuildBetweenAndLine((int Df, int Dr)[] dirs)
     {
         for (var a = 0; a < Square.Count; a++)
-        for (var b = 0; b < Square.Count; b++)
-        {
-            var bitA = Bitboard.FromSquare(a);
-            var bitB = Bitboard.FromSquare(b);
-            var raysA = Slide(a, 0, dirs);
-
-            if (a == b || (raysA & bitB) == 0)
-                continue;
-            
-            BetweenTable[(a << 6) + b] = Slide(a, bitB, dirs) & Slide(b, bitA, dirs);
-            LineTable[(a << 6) + b] = (raysA & Slide(b, 0, dirs)) | bitA | bitB;
-        }
-    }
-
-    private static ulong Slide(int square, ulong occupancy, (int Df, int Dr)[] dirs)
-    {
-        ulong result = 0;
-
-        foreach (var (df, dr) in dirs)
-        {
-            var f = Square.FileOf(square) + df;
-            var r = Square.RankOf(square) + dr;
-
-            while ((uint)f < 8 && (uint)r < 8)
+            for (var b = 0; b < Square.Count; b++)
             {
-                var bit = Bitboard.FromSquare(Square.Make(f, r));
-                result |= bit;
+                var bitA = Bitboard.FromSquare(a);
+                var bitB = Bitboard.FromSquare(b);
+                var raysA = Slide(a, 0, dirs);
 
-                if ((occupancy & bit) != 0)
-                    break;
-
-                f += df;
-                r += dr;
-            }
-        }
-
-        return result;
-    }
-
-    // Finds a magic number per squaere by trial. Every blocker subset must map to a slot
-    // that either is unused or already holds the same attack set (harmless collision)
-    private static void InitMagics(Magic[] magics, ulong[] table, (int Df, int Dr)[] dirs, XorShift64 rng)
-    {
-        var occupancies = new ulong[4096];
-        var references = new ulong[4096];
-        var used = new ulong[4096];
-        var epoch = new int[4096]; // avoids clearing `used` between attempts
-        var attempt = 0;
-        var offset = 0;
-
-        for (var square = 0; square < Square.Count; square++)
-        {
-            // Edge squares never change the attack set, so they are not relevant blockers.
-            var edges = ((Bitboard.Rank1 | Bitboard.Rank8) & ~Bitboard.Ranks[Square.RankOf(square)])
-                        | ((Bitboard.FileA | Bitboard.FileH) & ~Bitboard.Files[Square.FileOf(square)]);
-            var mask = Slide(square, 0, dirs) & ~edges;
-            var bits = BitOperations.PopCount(mask);
-            var shift = 64 - bits;
-            
-            // Enumerate every subset of the mask (carry-rippler trick)
-            var count = 0;
-            ulong subset = 0;
-            do
-            {
-                occupancies[count] = subset;
-                references[count] = Slide(square, subset, dirs);
-                count++;
-                subset = (subset - mask) & mask;
-            } while (subset != 0);
-
-            while (true)
-            {
-                var magic = rng.NextSparse();
-                
-                // Cheap rejection: good magics spread the mask bits into the top byte
-                if (BitOperations.PopCount((mask * magic) >> 56) < 6)
+                if (a == b || (raysA & bitB) == 0)
                     continue;
 
-                attempt++;
-                var valid = true;
-
-                for (var i = 0; i < count && valid; i++)
-                {
-                    var index = (int)((occupancies[i] * magic) >> shift);
-
-                    if (epoch[index] != attempt)
-                    {
-                        epoch[index] = attempt;
-                        used[index] = references[i];
-                    }
-                    else
-                    {
-                        valid = used[index] == references[i];
-                    }
-                }
-
-                if (!valid)
-                    continue;
-                
-                magics[square] = new Magic { Mask = mask, Number = magic, Shift = shift, Offset = offset };
-
-                for (var i = 0; i < count; i++)
-                    table[offset + (int)((occupancies[i] * magic) >> shift)] = references[i];
-
-                offset += 1 << bits;
-                break;
+                BetweenTable[(a << SquareBits) + b] = Slide(a, bitB, dirs) & Slide(b, bitA, dirs);
+                LineTable[(a << SquareBits) + b] = (raysA & Slide(b, 0, dirs)) | bitA | bitB;
             }
-        }
     }
 }
+

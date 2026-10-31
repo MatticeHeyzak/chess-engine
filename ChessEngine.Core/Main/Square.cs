@@ -1,12 +1,15 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace ChessEngine.Core.Main;
 
+/// <summary>
+/// Square indexing helpers. Squares are numbered a1 = 0, h1 = 7, a8 = 56, h8 = 63,
+/// so <c>index = rank * 8 + file</c>.
+/// </summary>
 public static class Square
 {
-    // a1 = 0, h1 = 7, a8 = 56, h8 = 63  ->  index = rank * 8 + file
-    public const int A1 = 0,  B1 = 1,  C1 = 2,  D1 = 3,  E1 = 4,  F1 = 5,  G1 = 6,  H1 = 7;
-    public const int A2 = 8,  B2 = 9,  C2 = 10, D2 = 11, E2 = 12, F2 = 13, G2 = 14, H2 = 15;
+    public const int A1 = 0, B1 = 1, C1 = 2, D1 = 3, E1 = 4, F1 = 5, G1 = 6, H1 = 7;
+    public const int A2 = 8, B2 = 9, C2 = 10, D2 = 11, E2 = 12, F2 = 13, G2 = 14, H2 = 15;
     public const int A3 = 16, B3 = 17, C3 = 18, D3 = 19, E3 = 20, F3 = 21, G3 = 22, H3 = 23;
     public const int A4 = 24, B4 = 25, C4 = 26, D4 = 27, E4 = 28, F4 = 29, G4 = 30, H4 = 31;
     public const int A5 = 32, B5 = 33, C5 = 34, D5 = 35, E5 = 36, F5 = 37, G5 = 38, H5 = 39;
@@ -15,34 +18,45 @@ public static class Square
     public const int A8 = 56, B8 = 57, C8 = 58, D8 = 59, E8 = 60, F8 = 61, G8 = 62, H8 = 63;
 
     public const int Count = 64;
-    
-    // Sentinel for "no square" (e.g. no en passent target)
+
+    /// <summary>Number of files per rank (and ranks per file).</summary>
+    public const int BoardSize = 8;
+
+    /// <summary>The highest file or rank index.</summary>
+    public const int MaxIndex = BoardSize - 1;
+
+    /// <summary>Sentinel for "no square" (e.g. no en passant target).</summary>
     public const int None = -1;
+
+    private const int FileMask = BoardSize - 1;
+    private const int RankShift = 3; // log2(BoardSize)
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Make(int file, int rank)
-        => rank * 8 + file;
+        => rank * BoardSize + file;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int FileOf(int square)
-        => square & 7;
+        => square & FileMask;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int RankOf(int square)
-        => square >> 3;
-    
+        => square >> RankShift;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsValid(int square)
         => (uint)square < Count;
 
+    /// <summary>Algebraic name such as "e4", or "-" for <see cref="None"/> (the FEN convention).</summary>
     public static string ToName(int square)
     {
         if (!IsValid(square))
             return "-";
-        
+
         return $"{(char)('a' + FileOf(square))}{(char)('1' + RankOf(square))}";
     }
 
+    /// <summary>Parses an algebraic square name; returns <see cref="None"/> if it is malformed.</summary>
     public static int Parse(string name)
     {
         if (name.Length != 2)
@@ -51,9 +65,10 @@ public static class Square
         var file = name[0] - 'a';
         var rank = name[1] - '1';
 
-        if ((uint)file > 7 || (uint)rank > 7)
+        if ((uint)file >= BoardSize || (uint)rank >= BoardSize)
             return None;
 
         return Make(file, rank);
     }
 }
+

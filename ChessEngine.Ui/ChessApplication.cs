@@ -1,4 +1,4 @@
-﻿using ChessEngine.Ui.Renderer;
+using ChessEngine.Ui.Renderer;
 using ChessEngine.Ui.Updates;
 using Raylib_cs;
 
@@ -6,14 +6,14 @@ namespace ChessEngine.Ui;
 
 public class ChessApplication(IEnumerable<IRenderer> renderers, List<IUpdatable> updatables)
 {
-    private readonly List<IRenderer> _renderers = renderers.ToList();
-    private readonly List<IUpdatable> _updatables = updatables.ToList();
-    
+    private readonly List<IRenderer> _renderers = [.. renderers];
+    private readonly List<IUpdatable> _updatables = [.. updatables];
+
     public void Run()
     {
         Raylib.InitWindow(Settings.ScreenWidth, Settings.ScreenHeight, Settings.WindowTitle);
         Raylib.SetTargetFPS(Settings.Fps);
-        
+
         foreach (var renderer in _renderers)
             renderer.Load();
 
@@ -22,10 +22,10 @@ public class ChessApplication(IEnumerable<IRenderer> renderers, List<IUpdatable>
             Update();
             Draw();
         }
-        
+
         foreach (var renderer in _renderers)
             renderer.Unload();
-        
+
         Raylib.CloseWindow();
     }
 
@@ -39,7 +39,7 @@ public class ChessApplication(IEnumerable<IRenderer> renderers, List<IUpdatable>
     {
         Raylib.BeginDrawing();
         Raylib.ClearBackground(Color.DarkGray);
-        
+
         foreach (var renderer in _renderers)
             renderer.Draw();
 

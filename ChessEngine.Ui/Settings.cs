@@ -1,4 +1,4 @@
-﻿namespace ChessEngine.Ui;
+namespace ChessEngine.Ui;
 
 public static class Settings
 {

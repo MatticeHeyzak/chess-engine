@@ -1,54 +1,24 @@
-﻿using ChessEngine.Core.Main;
-
 namespace ChessEngine.Core.MoveGen;
-
+/// <summary>
+/// Compile-time description of a side. The move generator is instantiated once per colour
+/// (<see cref="White"/> and <see cref="Black"/>) so every direction and rank is a constant
+/// the JIT can fold, instead of a branch executed per piece.
+/// </summary>
 public interface IColor
 {
     static abstract int Us { get; }
+    /// <summary>Square-index delta of one step towards the opponent's side.</summary>
     static abstract int Up { get; }
     static abstract int UpRight { get; }
     static abstract int UpLeft { get; }
+    /// <summary>First square (a-file) of this side's back rank.</summary>
     static abstract int Home { get; }
     static abstract ulong PromotionRank { get; }
+    /// <summary>The rank a pawn lands on after a single push from its start rank.</summary>
     static abstract ulong ThirdRank { get; }
     static abstract int KingSideRight { get; }
     static abstract int QueenSideRight { get; }
-
     static abstract ulong ShiftUp(ulong bb);
     static abstract ulong ShiftUpRight(ulong bb);
     static abstract ulong ShiftUpLeft(ulong bb);
-}
-
-public readonly struct White : IColor
-{
-    public static int Us => Piece.White;
-    public static int Up => 8;
-    public static int UpRight => 9;
-    public static int UpLeft => 7;
-    public static int Home => Square.A1;
-    public static ulong PromotionRank => Bitboard.Rank8;
-    public static ulong ThirdRank => Bitboard.Rank3;
-    public static int KingSideRight => CastlingRights.WhiteKingSide;
-    public static int QueenSideRight => CastlingRights.WhiteQueenSide;
-
-    public static ulong ShiftUp(ulong bb) => Bitboard.North(bb);
-    public static ulong ShiftUpRight(ulong bb) => Bitboard.NorthEast(bb);
-    public static ulong ShiftUpLeft(ulong bb) => Bitboard.NorthWest(bb);
-}
-
-public readonly struct Black : IColor
-{
-    public static int Us => Piece.Black;
-    public static int Up => -8;
-    public static int UpRight => -7;
-    public static int UpLeft => -9;
-    public static int Home => Square.A8;
-    public static ulong PromotionRank => Bitboard.Rank1;
-    public static ulong ThirdRank => Bitboard.Rank6;
-    public static int KingSideRight => CastlingRights.BlackKingSide;
-    public static int QueenSideRight => CastlingRights.BlackQueenSide;
-
-    public static ulong ShiftUp(ulong bb) => Bitboard.South(bb);
-    public static ulong ShiftUpRight(ulong bb) => Bitboard.SouthEast(bb);
-    public static ulong ShiftUpLeft(ulong bb) => Bitboard.SouthWest(bb);
 }

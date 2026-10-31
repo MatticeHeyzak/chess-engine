@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using ChessEngine.Core;
+using System.Numerics;
 using ChessEngine.Core.Main;
 using Raylib_cs;
 

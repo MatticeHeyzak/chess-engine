@@ -1,7 +1,9 @@
-﻿using ChessEngine.Core.Main;
-
 namespace ChessEngine.Core.Search;
-
-public readonly record struct SearchLimits(int MaxDepth = 64, int TimeMs = 1000);
-
-public readonly record struct SearchResult(Move BestMove, int Score, int Depth, ulong Nodes);
+/// <summary>Stop conditions for a search: whichever of depth or time is reached first.</summary>
+public readonly record struct SearchLimits(
+    int MaxDepth = SearchLimits.DefaultMaxDepth,
+    int TimeMs = SearchLimits.DefaultTimeMs)
+{
+    public const int DefaultMaxDepth = 64;
+    public const int DefaultTimeMs = 1000;
+}
