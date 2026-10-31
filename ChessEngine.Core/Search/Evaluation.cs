@@ -1,4 +1,5 @@
-﻿using ChessEngine.Core.BoardState;
+﻿using System.Numerics;
+using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
 
 namespace ChessEngine.Core.Search;
@@ -7,7 +8,7 @@ public static class Evaluation
 {
     private const int TotalPhase = 24;
 
-    private static readonly int[] PieceValue = [0, 100, 320, 330, 500, 900, 0];
+    public static readonly int[] PieceValue = [0, 100, 320, 330, 500, 900, 0];
     private static readonly int[] PhaseWeight = [0, 0, 1, 1, 2, 4, 0];
     
     // Indexed [pieceCode * 64 + square]. Material is already included.
@@ -141,7 +142,27 @@ public static class Evaluation
         
         phase = Math.Min(phase, TotalPhase); // promotions can push it over
         var score = (middlegame * phase + endgame * (TotalPhase - phase)) / TotalPhase;
-
+        
+        if (BitOperations.PopCount(board.GetBitboard(Piece.White, Piece.Bishop)) >= 2)
+            score += 30;
+        if (BitOperations.PopCount(board.GetBitboard(Piece.Black, Piece.Bishop)) >= 2)
+            score -= 30;
+        score += board.SideToMove == Piece.White ? 10 : -10;
+        
         return board.SideToMove == Piece.White ? score : -score;
+    }
+    
+    public static bool IsInsufficientMaterial(Board b)
+    {
+        var heavy = b.GetBitboard(Piece.White, Piece.Pawn) | b.GetBitboard(Piece.Black, Piece.Pawn)
+                       | b.GetBitboard(Piece.White, Piece.Rook) | b.GetBitboard(Piece.Black, Piece.Rook)
+                       | b.GetBitboard(Piece.White, Piece.Queen) | b.GetBitboard(Piece.Black, Piece.Queen);
+        
+        if (heavy != 0)
+            return false;
+
+        var minors = b.GetBitboard(Piece.White, Piece.Knight) | b.GetBitboard(Piece.Black, Piece.Knight)
+                        | b.GetBitboard(Piece.White, Piece.Bishop) | b.GetBitboard(Piece.Black, Piece.Bishop);
+        return System.Numerics.BitOperations.PopCount(minors) <= 1;
     }
 }

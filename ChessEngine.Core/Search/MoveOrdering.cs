@@ -9,10 +9,12 @@ public static class MoveOrdering
     private const int PrincipalMoveScore = 1_000_000;
     private const int CaptureBase = 100_000;
     private const int PromotionBase = 150_000;
+    private const int KillerBase = 90_000;
     
     // Tactical moves score above 0, quiet moves score exactly 0.
-    public static void ScoreMoves(Board board, ref MoveList list, Move principalMove)
+    public static void ScoreMoves(Board board, ref MoveList list, Move principalMove, Heuristics? heuristic = null, int ply = 0)
     {
+        var side = board.SideToMove;
         for (var i = 0; i < list.Count; i++)
         {
             var move = list[i];
@@ -28,6 +30,12 @@ public static class MoveOrdering
             if (move.IsPromotion)
                 score += PromotionBase + 100 * move.PromotionPieceType;
 
+            if (score == 0 && heuristic is not null)
+            {
+                var k = heuristic.KillerRank(ply, move);
+                score = k > 0 ? KillerBase + k : heuristic.History(side, move); 
+            }
+            
             if (move == principalMove)
                 score = PrincipalMoveScore;
 

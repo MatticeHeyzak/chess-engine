@@ -165,7 +165,54 @@ public sealed class Board
 
         Hash = undo.Hash;
     }
+
+    public void MakeNullMove()
+    {
+        _history[_ply] = new UndoInfo(Piece.None, Castling, EnPassantSquare, HalfmoveClock, Hash);
+        if (EnPassantSquare != Square.None)
+        {
+            Hash ^= Zobrist.EnPassantFile(Square.FileOf(EnPassantSquare));
+            EnPassantSquare = Square.None;
+        }
+
+        HalfmoveClock++;
+        SideToMove ^= 1;
+        Hash ^= Zobrist.SideToMove;
+        _ply++;
+    }
+
+    public void UnmakeNullMove()
+    {
+        _ply--;
+        var undo = _history[_ply];
+        SideToMove ^= 1;
+        EnPassantSquare = undo.EnPassantSquare;
+        HalfmoveClock = undo.HalfmoveClock;
+        Hash = undo.Hash;
+    }
+
+    public bool HasNonPawnMaterial(int color)
+        => (_colorOccupancy[color]
+            & ~(_pieces[Piece.MakePiece(color, Piece.Pawn)] | _pieces[Piece.MakePiece(color, Piece.King)])) != 0;
     
+    public Board Clone()
+    {
+        var b = new Board();
+        Array.Copy(_pieces, b._pieces, _pieces.Length);
+        Array.Copy(_colorOccupancy, b._colorOccupancy, 2);
+        Array.Copy(_mailbox, b._mailbox, _mailbox.Length);
+        Array.Copy(_kingSquare, b._kingSquare, 2);
+        Array.Copy(_history, b._history, _ply); // only the live part
+        b._occupancy = _occupancy;
+        b._ply = _ply;
+        b.SideToMove = SideToMove;
+        b.Castling = Castling;
+        b.EnPassantSquare = EnPassantSquare;
+        b.HalfmoveClock = HalfmoveClock;
+        b.FullmoveNumber = FullmoveNumber;
+        b.Hash = Hash;
+        return b;
+    }
     
     // Hash verification
 

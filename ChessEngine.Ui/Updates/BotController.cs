@@ -8,6 +8,7 @@ public class BotController(Board board, int botColor, int thinkTimeMs) : IUpdata
 {
     private Task<SearchResult>? _search;
     private ulong _searchedHash;
+    private readonly TranspositionTable _tt = new(64);
 
     public bool IsThinking => _search is not null;
 
@@ -37,11 +38,9 @@ public class BotController(Board board, int botColor, int thinkTimeMs) : IUpdata
         if (list.Count == 0)
             return; // checkmate or stalemate
         
-        // Note currently Round-tripping gets skipped
-        var copy = Fen.Parse(Fen.Export(board));
+        var copy = board.Clone();
         _searchedHash = board.Hash;
-        
         var limits = new SearchLimits(MaxDepth: 64, TimeMs: thinkTimeMs);
-        _search = Task.Run(() => new Searcher(copy).Search(limits));
+        _search = Task.Run(() => new Searcher(copy, _tt).Search(limits));
     }
 }
