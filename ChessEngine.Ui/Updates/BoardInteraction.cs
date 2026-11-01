@@ -6,7 +6,7 @@ using Raylib_cs;
 
 namespace ChessEngine.Ui.Updates;
 
-public sealed class BoardInteraction(Board board, BoardLayout layout) : IUpdatable
+public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTracker lastMove) : IUpdatable
 {
     public static readonly int[] PromotionChoices = [Piece.Queen, Piece.Rook, Piece.Bishop, Piece.Knight];
 
@@ -112,6 +112,7 @@ public sealed class BoardInteraction(Board board, BoardLayout layout) : IUpdatab
     private void Play(Move move)
     {
         board.MakeMove(move);
+        lastMove.Record(move);
         Deselect();
     }
 

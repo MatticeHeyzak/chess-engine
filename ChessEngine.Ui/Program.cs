@@ -11,17 +11,19 @@ const int boardMargin = 50;
 const int squareSize = 150;
 const int botThinkTimeMs = 1000;
 var layout = new BoardLayout(originX: boardMargin, originY: boardMargin, squareSize: squareSize);
-var interaction = new BoardInteraction(board, layout);
+var lastMove = new LastMoveTracker();
+var interaction = new BoardInteraction(board, layout, lastMove);
 
 IRenderer[] renderers =
 [
     new BoardRenderer(layout),
+    new LastMoveRenderer(layout, lastMove),
     new MoveHighlightRenderer(layout, interaction),
     new PieceRenderer(board, layout),
     new PromotionPickerRenderer(board, layout, interaction)
 ];
 
-var bot = new BotController(board, Piece.Black, thinkTimeMs: botThinkTimeMs);
+var bot = new BotController(board, Piece.Black, thinkTimeMs: botThinkTimeMs, lastMove);
 
 var app = new ChessApplication(renderers, [interaction, bot]);
 app.Run();

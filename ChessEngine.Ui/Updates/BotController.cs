@@ -7,7 +7,7 @@ namespace ChessEngine.Ui.Updates;
 /// <summary>
 /// Plays one side: starts a background search when it is the bot's turn and makes the move once it finishes.
 /// </summary>
-public class BotController(Board board, int botColor, int thinkTimeMs) : IUpdatable
+public class BotController(Board board, int botColor, int thinkTimeMs, LastMoveTracker lastMove) : IUpdatable
 {
     private const int TranspositionTableMegabytes = 64;
 
@@ -33,8 +33,11 @@ public class BotController(Board board, int botColor, int thinkTimeMs) : IUpdata
         var result = _search.Result;
         _search = null;
 
-        if (board.SideToMove == botColor && board.Hash == _searchedHash && !result.BestMove.IsNull)
-            board.MakeMove(result.BestMove);
+        if (board.SideToMove != botColor || board.Hash != _searchedHash || result.BestMove.IsNull)
+            return;
+
+        board.MakeMove(result.BestMove);
+        lastMove.Record(result.BestMove);
     }
 
     private void StartSearch()
