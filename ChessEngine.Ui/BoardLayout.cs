@@ -6,13 +6,30 @@ namespace ChessEngine.Ui;
 /// <summary>Maps between board squares and screen pixels, optionally with the board flipped (black at the bottom).</summary>
 public sealed class BoardLayout(int originX, int originY, int squareSize)
 {
-    public int OriginX { get; } = originX;
-    public int OriginY { get; } = originY;
-    public int SquareSize { get; } = squareSize;
+    public int OriginX { get; private set; } = originX;
+    public int OriginY { get; private set; } = originY;
+    public int SquareSize { get; private set; } = squareSize;
+    public Rectangle SidebarRect { get; private set; }
     public int BoardPixelSize => SquareSize * Square.BoardSize;
 
     /// <summary>False: white at the bottom (a1 bottom-left). True: black at the bottom.</summary>
     public bool Flipped { get; set; }
+
+    /// <summary>
+    /// Recomputes board size and position for the current window size.
+    /// </summary>
+    public void Fit(int width, int height)
+    {
+        const int margin = 24;
+        var sidebar = Math.Clamp(width / 4, 260, 380);
+        SquareSize = Math.Max(20, Math.Min(
+            (width - sidebar - margin * 3) / Square.BoardSize,
+            (height - margin * 2) / Square.BoardSize));
+        OriginX = margin;
+        OriginY = (height - BoardPixelSize) / 2;
+        var x = OriginX + BoardPixelSize + margin;
+        SidebarRect = new Rectangle(x, OriginY, Math.Max(0, width - x - margin), BoardPixelSize);
+    }
 
     public Rectangle GetSquareRect(int square)
     {
