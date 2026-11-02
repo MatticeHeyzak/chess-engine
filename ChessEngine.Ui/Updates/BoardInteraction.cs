@@ -6,16 +6,20 @@ using Raylib_cs;
 
 namespace ChessEngine.Ui.Updates;
 
-public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTracker lastMove) : IUpdatable
+public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTracker lastMove, int playerColor) : IUpdatable
 {
     public static readonly int[] PromotionChoices = [Piece.Queen, Piece.Rook, Piece.Bishop, Piece.Knight];
 
     private readonly List<Move> _moves = [];
 
     public int Selected { get; private set; } = Square.None;
+    public int DragFrom { get; private set; } = Square.None;
+    public bool Dragging => DragFrom != Square.None;
     public int PromotionSquare { get; private set; } = Square.None;
     public bool PromotionPending => PromotionSquare != Square.None;
     public IReadOnlyList<Move> Moves => _moves;
+
+    private bool CanInteract => board.SideToMove == playerColor;
 
     public Rectangle PromotionRect(int index)
     {
@@ -27,11 +31,22 @@ public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTr
 
     public void Update()
     {
-        if (!Raylib.IsMouseButtonPressed(MouseButton.Left))
+        if (!CanInteract)
+        {
+            if (Selected != Square.None || Dragging || PromotionPending)
+                Deselect();
             return;
+        }
 
-        var mouse = new Vector2(Raylib.GetMouseX(), Raylib.GetMouseY());
+        var mouse = Raylib.GetMousePosition();
+        if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+            OnPress(mouse);
+        else if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+            OnRelease(mouse);
+    }
 
+    private void OnPress(Vector2 mouse)
+    {
         if (PromotionPending)
         {
             HandlePromotionClick(mouse);
@@ -45,32 +60,39 @@ public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTr
             return;
         }
 
-        if (TryMoveTo(square))
+        if (Selected != Square.None && TryMoveTo(square))
             return;
 
         var piece = board.PieceAt(square);
         if (piece != Piece.None && Piece.ColorOf(piece) == board.SideToMove)
+        {
             Select(square);
-        else
-            Deselect();
+            DragFrom = square;
+        }
+        else Deselect();
+    }
+
+    private void OnRelease(Vector2 mouse)
+    {
+        if (!Dragging) return;
+        var from = DragFrom;
+        DragFrom = Square.None;
+
+        var square = layout.ScreenToSquare((int)mouse.X, (int)mouse.Y);
+        if (square == Square.None || square == from) return;
+        TryMoveTo(square);
     }
 
     private bool TryMoveTo(int square)
     {
         foreach (var move in _moves)
         {
-            if (move.To != square)
-                continue;
+            if (move.To != square) continue;
 
-            // Four promotion moves share this target: let the user pick one.
-            if (move.IsPromotion)
-                PromotionSquare = square;
-            else
-                Play(move);
-
+            if (move.IsPromotion) PromotionSquare = square;
+            else Play(move);
             return true;
         }
-
         return false;
     }
 
@@ -90,7 +112,6 @@ public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTr
                 }
             }
         }
-
         PromotionSquare = Square.None;
     }
 
@@ -101,12 +122,9 @@ public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTr
 
         var list = new MoveList();
         MoveGenerator.Generate(board, ref list);
-
         for (var i = 0; i < list.Count; i++)
-        {
             if (list[i].From == square)
                 _moves.Add(list[i]);
-        }
     }
 
     private void Play(Move move)
@@ -119,6 +137,7 @@ public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTr
     private void Deselect()
     {
         Selected = Square.None;
+        DragFrom = Square.None;
         PromotionSquare = Square.None;
         _moves.Clear();
     }

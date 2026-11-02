@@ -10,7 +10,7 @@ var board = Fen.Parse(fen);
 const int botThinkTimeMs = 1000;
 var layout = new BoardLayout(originX: 24, originY: 24, squareSize: 100);
 var lastMove = new LastMoveTracker();
-var interaction = new BoardInteraction(board, layout, lastMove);
+var interaction = new BoardInteraction(board, layout, lastMove, Piece.White);
 
 IRenderer[] renderers =
 [
@@ -18,7 +18,7 @@ IRenderer[] renderers =
     new LastMoveRenderer(layout, lastMove),
     new CheckRenderer(layout, board),
     new MoveHighlightRenderer(layout, interaction),
-    new PieceRenderer(board, layout),
+    new PieceRenderer(board, layout, interaction),
     new PromotionPickerRenderer(board, layout, interaction)
 ];
 
