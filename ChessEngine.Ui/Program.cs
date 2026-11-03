@@ -1,26 +1,25 @@
 using ChessEngine.Core.BoardState;
-using ChessEngine.Core.Main;
 using ChessEngine.Ui;
 using ChessEngine.Ui.Renderer;
 using ChessEngine.Ui.Updates;
 
 var fen = args.Length > 0 ? args[0] : Fen.StartPosition;
-var board = Fen.Parse(fen);
+var session = new GameSession(fen);
 
 const int botThinkTimeMs = 1000;
 var layout = new BoardLayout(originX: 24, originY: 24, squareSize: 100);
-var lastMove = new LastMoveTracker();
-var interaction = new BoardInteraction(board, layout, lastMove, Piece.White);
+var interaction = new BoardInteraction(session, layout);
 
 IRenderer[] renderers =
 [
     new BoardRenderer(layout),
-    new LastMoveRenderer(layout, lastMove),
-    new CheckRenderer(layout, board),
+    new LastMoveRenderer(layout, session),
+    new CheckRenderer(layout, session),
     new MoveHighlightRenderer(layout, interaction),
-    new PieceRenderer(board, layout, interaction),
-    new PromotionPickerRenderer(board, layout, interaction)
+    new PieceRenderer(session, layout, interaction),
+    new PromotionPickerRenderer(session, layout, interaction),
+    new MenuRenderer(session)
 ];
 
-var bot = new BotController(board, Piece.Black, thinkTimeMs: botThinkTimeMs, lastMove);
+var bot = new BotController(session, botThinkTimeMs);
 new ChessApplication(renderers, [interaction, bot], layout).Run();

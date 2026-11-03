@@ -9,7 +9,7 @@ public class BoardRenderer(BoardLayout layout) : IRenderer
     {
         Raylib.DrawRectangleRounded(
             new Rectangle(layout.OriginX - 6, layout.OriginY - 6, layout.BoardPixelSize + 12, layout.BoardPixelSize + 12),
-            0.01f, 8, new Color(0, 0, 0, 90));
+            0.01f, 8, new Color(0, 0, 0, 95));
 
         for (var square = 0; square < Square.Count; square++)
             Raylib.DrawRectangleRec(layout.GetSquareRect(square), GetSquareColor(square));

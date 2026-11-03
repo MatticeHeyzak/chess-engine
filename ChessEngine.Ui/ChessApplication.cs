@@ -40,8 +40,9 @@ public class ChessApplication(IEnumerable<IRenderer> renderers, List<IUpdatable>
 
     private void Draw()
     {
+        Gui.BeginFrame();
         Raylib.BeginDrawing();
-        Raylib.ClearBackground(Color.DarkGray);
+        Raylib.ClearBackground(Theme.Background);
 
         foreach (var renderer in _renderers)
             renderer.Draw();

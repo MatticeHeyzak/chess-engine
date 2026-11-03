@@ -1,12 +1,10 @@
-using System.Numerics;
-using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
 using ChessEngine.Ui.Updates;
 using Raylib_cs;
 
 namespace ChessEngine.Ui.Renderer;
 
-public class PieceRenderer(Board board, BoardLayout layout, BoardInteraction interaction) : IRenderer
+public class PieceRenderer(GameSession session, BoardLayout layout, BoardInteraction interaction) : IRenderer
 {
     private const float DragScale = 1.1f;
     private readonly PieceTextures _textures = new();
@@ -16,6 +14,7 @@ public class PieceRenderer(Board board, BoardLayout layout, BoardInteraction int
 
     public void Draw()
     {
+        var board = session.Board;
         for (var square = 0; square < Square.Count; square++)
         {
             if (square == interaction.DragFrom)

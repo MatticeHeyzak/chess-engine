@@ -6,7 +6,7 @@ using Raylib_cs;
 
 namespace ChessEngine.Ui.Renderer;
 
-public class PromotionPickerRenderer(Board board, BoardLayout layout, BoardInteraction interaction) : IRenderer
+public class PromotionPickerRenderer(GameSession session, BoardLayout layout, BoardInteraction interaction) : IRenderer
 {
     private static readonly Color DimColor = new(0, 0, 0, 120);
     private static readonly Color ShadowColor = new(0, 0, 0, 90);
@@ -36,7 +36,7 @@ public class PromotionPickerRenderer(Board board, BoardLayout layout, BoardInter
         Raylib.DrawRectangleRounded(panel, PanelRoundness, RoundSegments, PanelColor);
 
         var mouse = new Vector2(Raylib.GetMouseX(), Raylib.GetMouseY());
-        var color = board.SideToMove;
+        var color = session.Board.SideToMove;
 
         for (var i = 0; i < BoardInteraction.PromotionChoices.Length; i++)
         {

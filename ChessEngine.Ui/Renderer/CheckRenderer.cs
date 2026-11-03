@@ -5,10 +5,11 @@ using Raylib_cs;
 
 namespace ChessEngine.Ui.Renderer;
 
-public class CheckRenderer(BoardLayout layout, Board board) : IRenderer
+public class CheckRenderer(BoardLayout layout, GameSession session) : IRenderer
 {
     public void Draw()
     {
+        var board = session.Board;
         if (!MoveGenerator.IsInCheck(board))
             return;
 

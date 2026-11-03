@@ -1,12 +1,11 @@
 using System.Numerics;
-using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
 using ChessEngine.Core.MoveGen;
 using Raylib_cs;
 
 namespace ChessEngine.Ui.Updates;
 
-public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTracker lastMove, int playerColor) : IUpdatable
+public sealed class BoardInteraction(GameSession session, BoardLayout layout) : IUpdatable
 {
     public static readonly int[] PromotionChoices = [Piece.Queen, Piece.Rook, Piece.Bishop, Piece.Knight];
 
@@ -19,7 +18,7 @@ public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTr
     public bool PromotionPending => PromotionSquare != Square.None;
     public IReadOnlyList<Move> Moves => _moves;
 
-    private bool CanInteract => board.SideToMove == playerColor;
+    private bool CanInteract => session.Screen == Screen.Playing && session.Board.SideToMove == session.PlayerColor;
 
     public Rectangle PromotionRect(int index)
     {
@@ -31,6 +30,8 @@ public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTr
 
     public void Update()
     {
+        layout.Flipped = session.PlayerColor == Piece.Black;
+
         if (!CanInteract)
         {
             if (Selected != Square.None || Dragging || PromotionPending)
@@ -63,8 +64,8 @@ public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTr
         if (Selected != Square.None && TryMoveTo(square))
             return;
 
-        var piece = board.PieceAt(square);
-        if (piece != Piece.None && Piece.ColorOf(piece) == board.SideToMove)
+        var piece = session.Board.PieceAt(square);
+        if (piece != Piece.None && Piece.ColorOf(piece) == session.Board.SideToMove)
         {
             Select(square);
             DragFrom = square;
@@ -121,7 +122,7 @@ public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTr
         _moves.Clear();
 
         var list = new MoveList();
-        MoveGenerator.Generate(board, ref list);
+        MoveGenerator.Generate(session.Board, ref list);
         for (var i = 0; i < list.Count; i++)
             if (list[i].From == square)
                 _moves.Add(list[i]);
@@ -129,8 +130,7 @@ public sealed class BoardInteraction(Board board, BoardLayout layout, LastMoveTr
 
     private void Play(Move move)
     {
-        board.MakeMove(move);
-        lastMove.Record(move);
+        session.Play(move);
         Deselect();
     }
 
