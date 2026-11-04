@@ -18,6 +18,7 @@ IRenderer[] renderers =
     new MoveHighlightRenderer(layout, interaction),
     new PieceRenderer(session, layout, interaction),
     new PromotionPickerRenderer(session, layout, interaction),
+    new SidebarRenderer(session, layout),
     new MenuRenderer(session)
 ];
 
