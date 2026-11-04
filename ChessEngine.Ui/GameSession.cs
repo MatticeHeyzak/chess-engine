@@ -1,12 +1,15 @@
 ﻿using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
+using ChessEngine.Core.MoveGen;
+using ChessEngine.Core.Search;
 
 namespace ChessEngine.Ui;
 
 public enum Screen
 {
     Menu,
-    Playing
+    Playing,
+    GameOver
 }
 
 public enum SideChoice
@@ -28,6 +31,9 @@ public sealed class GameSession(string startFen)
     private static readonly int[] PieceValues = [0, 1, 3, 3, 5, 9, 0];
     public List<PlayedMove> History { get; } = [];
 
+    public string ResultTitle { get; private set; } = "";
+    public string ResultReason { get; private set; } = "";
+
     public int GameId { get; private set; }
 
     public IEnumerable<int> CapturedBy(int color)
@@ -38,6 +44,46 @@ public sealed class GameSession(string startFen)
     public int MaterialAdvantage(int color)
         => CapturedBy(color).Sum(p => PieceValues[Piece.TypeOf(p)])
          - CapturedBy(color ^ 1).Sum(p => PieceValues[Piece.TypeOf(p)]);
+
+    public void Restart() => StartGame(PlayerColor == Piece.White ? SideChoice.White : SideChoice.Black);
+    public void ToMenu() => Screen = Screen.Menu;
+
+    private void CheckGameOver()
+    {
+        var list = new MoveList();
+        MoveGenerator.Generate(Board, ref list);
+
+        if (list.Count == 0)
+        {
+            if (MoveGenerator.IsInCheck(Board))
+                Finish(Board.SideToMove == Piece.White ? "Black wins" : "White wins", "Checkmate");
+            else
+                Finish("Draw", "Stalemate");
+            return;
+        }
+
+        if (Evaluation.IsInsufficientMaterial(Board))
+        {
+            Finish("Draw", "Insufficient material");
+            return;
+        }
+
+        if (Board.CountRepetitions() >= 3)
+        {
+            Finish("Draw", "Threefold repetition");
+            return;
+        }
+
+        if (Board.HalfmoveClock >= 100)
+            Finish("Draw", "Fifty-move rule");
+    }
+
+    private void Finish(string title, string reason)
+    {
+        ResultTitle = title;
+        ResultReason = reason;
+        Screen = Screen.GameOver;
+    }
 
     public void StartGame(SideChoice choice)
     {
@@ -52,6 +98,8 @@ public sealed class GameSession(string startFen)
         LastMove = Move.Null;
         GameId++;
         Screen = Screen.Playing;
+        ResultTitle = ResultReason = "";
+        History.Clear();
     }
 
     public void Play(Move move)
@@ -63,5 +111,6 @@ public sealed class GameSession(string startFen)
         Board.MakeMove(move);
         History.Add(new PlayedMove(move, captured));
         LastMove = move;
+        CheckGameOver();
     }
 }

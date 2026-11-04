@@ -19,6 +19,7 @@ IRenderer[] renderers =
     new PieceRenderer(session, layout, interaction),
     new PromotionPickerRenderer(session, layout, interaction),
     new SidebarRenderer(session, layout),
+    new GameOverRenderer(session),
     new MenuRenderer(session)
 ];
 
