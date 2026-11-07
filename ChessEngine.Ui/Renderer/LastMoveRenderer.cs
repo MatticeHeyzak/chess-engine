@@ -1,21 +1,17 @@
-﻿using ChessEngine.Core.Main;
-using ChessEngine.Ui.Updates;
-using Raylib_cs;
+﻿using Raylib_cs;
 
 namespace ChessEngine.Ui.Renderer;
 
 public class LastMoveRenderer(BoardLayout layout, GameSession session) : IRenderer
 {
-    private static readonly Color HighlightColor = new(246, 246, 105, 110);
-
     public void Draw()
     {
         var move = session.DisplayLastmove;
         if (move.IsNull)
             return;
 
-        Raylib.DrawRectangleRec(layout.GetSquareRect(move.From), HighlightColor);
-        Raylib.DrawRectangleRec(layout.GetSquareRect(move.To), HighlightColor);
+        Raylib.DrawRectangleRec(layout.GetSquareRect(move.From), Theme.LastMove);
+        Raylib.DrawRectangleRec(layout.GetSquareRect(move.To), Theme.LastMove);
     }
 
     public void Load() { }
