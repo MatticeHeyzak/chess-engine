@@ -1,4 +1,5 @@
-﻿using ChessEngine.Core.BoardState;
+﻿using System.Net.Mime;
+using ChessEngine.Core.BoardState;
 using ChessEngine.Core.Main;
 using ChessEngine.Core.MoveGen;
 using ChessEngine.Core.Search;
@@ -9,7 +10,8 @@ public enum Screen
 {
     Menu,
     Playing,
-    GameOver
+    GameOver,
+    Replay
 }
 
 public enum SideChoice
@@ -27,8 +29,15 @@ public sealed class GameSession(string startFen)
     public Board Board { get; private set; } = Fen.Parse(startFen);
     public int PlayerColor { get; private set; } = Piece.White;
     public int BotColor => PlayerColor ^ 1;
-    public Move LastMove { get; private set; } = Move.Null;
     private static readonly int[] PieceValues = [0, 1, 3, 3, 5, 9, 0];
+    private Board _replayBoard = Fen.Parse(startFen);
+
+    public int ReplayIndex { get; private set; }
+
+    public Board DisplayBoard => Screen == Screen.Replay ? _replayBoard : Board;
+    public int VisiblePlies => Screen == Screen.Replay ? ReplayIndex : History.Count;
+    public Move DisplayLastmove => VisiblePlies > 0 ? History[VisiblePlies - 1].Move : Move.Null;
+
     public List<PlayedMove> History { get; } = [];
 
     public string ResultTitle { get; private set; } = "";
@@ -37,7 +46,7 @@ public sealed class GameSession(string startFen)
     public int GameId { get; private set; }
 
     public IEnumerable<int> CapturedBy(int color)
-        => History.Select(x => x.Captured)
+        => History.Take(VisiblePlies).Select(x => x.Captured)
             .Where(p => p != Piece.None && Piece.ColorOf(p) != color)
             .OrderByDescending(Piece.TypeOf);
 
@@ -95,7 +104,6 @@ public sealed class GameSession(string startFen)
         };
 
         Board = Fen.Parse(startFen);
-        LastMove = Move.Null;
         GameId++;
         Screen = Screen.Playing;
         ResultTitle = ResultReason = "";
@@ -110,7 +118,30 @@ public sealed class GameSession(string startFen)
 
         Board.MakeMove(move);
         History.Add(new PlayedMove(move, captured));
-        LastMove = move;
         CheckGameOver();
     }
+
+    public void EnterReplay()
+    {
+        Screen = Screen.Replay;
+        SetReplay(0);
+    }
+    public void ExitReplay() => Screen = Screen.GameOver;
+
+    public void SetReplay(int index)
+    {
+        ReplayIndex = Math.Clamp(index, 0, History.Count);
+        _replayBoard = Fen.Parse(startFen);
+        for (var i = 0; i < ReplayIndex; i++)
+            _replayBoard.MakeMove(History[i].Move);
+    }
+
+    public string MoveText(int ply)
+    {
+        var m = History[ply].Move;
+        var text = Name(m.From) + Name(m.To);
+        return m.IsPromotion ? text + " pnbrqk"[m.PromotionPieceType] : text;
+    }
+
+    private static string Name(int sq) => $"{(char)('a' + Square.FileOf(sq))}{Square.RankOf(sq) + 1}";
 }

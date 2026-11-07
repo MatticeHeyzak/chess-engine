@@ -14,7 +14,7 @@ public class PieceRenderer(GameSession session, BoardLayout layout, BoardInterac
 
     public void Draw()
     {
-        var board = session.Board;
+        var board = session.DisplayBoard;
         for (var square = 0; square < Square.Count; square++)
         {
             if (square == interaction.DragFrom)

@@ -10,7 +10,7 @@ public class LastMoveRenderer(BoardLayout layout, GameSession session) : IRender
 
     public void Draw()
     {
-        var move = session.LastMove;
+        var move = session.DisplayLastmove;
         if (move.IsNull)
             return;
 

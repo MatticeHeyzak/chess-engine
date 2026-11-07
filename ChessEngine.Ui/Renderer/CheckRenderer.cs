@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using ChessEngine.Core.BoardState;
 using ChessEngine.Core.MoveGen;
 using Raylib_cs;
 
@@ -9,7 +8,7 @@ public class CheckRenderer(BoardLayout layout, GameSession session) : IRenderer
 {
     public void Draw()
     {
-        var board = session.Board;
+        var board = session.DisplayBoard;
         if (!MoveGenerator.IsInCheck(board))
             return;
 
