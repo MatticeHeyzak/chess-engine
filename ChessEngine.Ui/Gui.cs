@@ -1,4 +1,5 @@
-﻿using Raylib_cs;
+﻿using ChessEngine.Ui.Appearance;
+using Raylib_cs;
 
 namespace ChessEngine.Ui;
 
@@ -7,6 +8,18 @@ public static class Gui
     private static bool _clickUsed;
 
     public static void BeginFrame() => _clickUsed = false;
+
+    public static bool Toggle(Rectangle r, bool value)
+    {
+        Raylib.DrawRectangleRounded(r, 1f, 16, value ? Theme.Accent : Theme.Button);
+
+        const float inset = 4;
+        var diameter = r.Height - inset * 2;
+        var knobX = value ? r.X + r.Width - inset - diameter / 2 : r.X + inset + diameter / 2;
+        Raylib.DrawCircle((int)knobX, (int)(r.Y + r.Height / 2), diameter / 2, Theme.Text);
+
+        return Clicked(r);
+    }
 
     public static bool Clicked(Rectangle r)
     {

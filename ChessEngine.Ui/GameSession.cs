@@ -11,7 +11,8 @@ public enum Screen
     Menu,
     Playing,
     GameOver,
-    Replay
+    Replay,
+    Settings
 }
 
 public enum SideChoice
@@ -56,6 +57,7 @@ public sealed class GameSession(string startFen)
 
     public void Restart() => StartGame(PlayerColor == Piece.White ? SideChoice.White : SideChoice.Black);
     public void ToMenu() => Screen = Screen.Menu;
+    public void OpenSettings() => Screen = Screen.Settings;
 
     private void CheckGameOver()
     {

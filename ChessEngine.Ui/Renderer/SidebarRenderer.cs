@@ -1,4 +1,6 @@
-﻿using Raylib_cs;
+﻿using ChessEngine.Core.Main;
+using ChessEngine.Ui.Appearance;
+using Raylib_cs;
 
 namespace ChessEngine.Ui.Renderer;
 
@@ -22,8 +24,9 @@ public class SidebarRenderer(GameSession session, BoardLayout layout) : IRendere
         var inner = new Rectangle(r.X + pad, r.Y + pad, r.Width - pad * 2, r.Height - pad * 2);
         var topRow = new Rectangle(inner.X, inner.Y, inner.Width, CapturedHeight);
         var bottomRow = new Rectangle(inner.X, inner.Y + inner.Height - CapturedHeight, inner.Width, CapturedHeight);
-        DrawCaptured(session.PlayerColor ^ 1, topRow);
-        DrawCaptured(session.PlayerColor, bottomRow);
+        var bottomColor = layout.Flipped ? Piece.Black : Piece.White;
+        DrawCaptured(bottomColor ^ 1, topRow);
+        DrawCaptured(bottomColor, bottomRow);
 
         var listBottom = bottomRow.Y - 12;
         if (session.Screen == Screen.Replay)

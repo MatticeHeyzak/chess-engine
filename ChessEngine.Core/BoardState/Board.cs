@@ -29,10 +29,6 @@ public sealed class Board
     public int FullmoveNumber { get; private set; } = 1;
     public ulong Hash { get; private set; }
 
-    // Construction
-
-    public static Board CreateStart() => Fen.Parse(Fen.StartPosition);
-
     /// <summary>
     /// Deep copy that keeps the undo history, so repetition detection still works on the copy
     /// (a FEN round trip would lose it). Used to hand a private board to a search thread.

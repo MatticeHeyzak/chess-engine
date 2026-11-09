@@ -1,4 +1,5 @@
 using ChessEngine.Core.Main;
+using ChessEngine.Ui.Appearance;
 using Raylib_cs;
 
 namespace ChessEngine.Ui.Renderer;

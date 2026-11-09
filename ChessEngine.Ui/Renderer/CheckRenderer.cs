@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using ChessEngine.Core.MoveGen;
+using ChessEngine.Ui.Appearance;
 using Raylib_cs;
 
 namespace ChessEngine.Ui.Renderer;

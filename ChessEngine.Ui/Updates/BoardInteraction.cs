@@ -5,7 +5,7 @@ using Raylib_cs;
 
 namespace ChessEngine.Ui.Updates;
 
-public sealed class BoardInteraction(GameSession session, BoardLayout layout) : IUpdatable
+public sealed class BoardInteraction(GameSession session, BoardLayout layout, UserSettings settings) : IUpdatable
 {
     public static readonly int[] PromotionChoices = [Piece.Queen, Piece.Rook, Piece.Bishop, Piece.Knight];
 
@@ -30,7 +30,7 @@ public sealed class BoardInteraction(GameSession session, BoardLayout layout) : 
 
     public void Update()
     {
-        layout.Flipped = session.PlayerColor == Piece.Black;
+        layout.Flipped = settings.RotateBoard && session.PlayerColor == Piece.Black;
 
         if (!CanInteract)
         {

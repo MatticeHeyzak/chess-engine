@@ -1,4 +1,5 @@
-﻿using Raylib_cs;
+﻿using ChessEngine.Ui.Appearance;
+using Raylib_cs;
 
 namespace ChessEngine.Ui.Renderer;
 
@@ -24,6 +25,11 @@ public class MenuRenderer(GameSession session) : IRenderer
             var r = new Rectangle((w - bw) / 2, top + 160 + i * (bh + gap), bw, bh);
             if (Gui.Button(r, Labels[i], primary: i == 2))
                 session.StartGame((SideChoice)i);
+
+            const float margin = 24;
+            var settingsButton = new Rectangle(w - margin - 140, margin, 140, 44);
+            if (Gui.Button(settingsButton, "Settings", fontSize: 20))
+                session.OpenSettings();
         }
     }
 
