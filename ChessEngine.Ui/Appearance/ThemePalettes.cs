@@ -83,7 +83,16 @@ public static class ThemePalettes
             Button: new(84, 58, 48, 255), ButtonHover: new(110, 76, 62, 255),
             Overlay: new(20, 12, 10, 190),
             LightSquare: new(244, 218, 176, 255), DarkSquare: new(196, 108, 76, 255),
-            LastMove: new(30, 200, 190, 100), Check: new(210, 40, 40, 190))
+            LastMove: new(30, 200, 190, 100), Check: new(210, 40, 40, 190)),
+
+        new("Winter Wonderland",
+            Background: new(12, 36, 26, 255), Panel: new(20, 56, 40, 255),
+            Text: new(248, 250, 246, 255), TextDim: new(160, 196, 172, 255),
+            Accent: new(200, 38, 52, 255), AccentHover: new(235, 74, 84, 255),
+            Button: new(30, 78, 56, 255), ButtonHover: new(42, 104, 74, 255),
+            Overlay: new(6, 20, 14, 190),
+            LightSquare: new(244, 240, 228, 255), DarkSquare: new(74, 128, 92, 255),
+            LastMove: new(255, 205, 70, 110), Check: new(235, 40, 50, 190))
     ];
 
     public static ThemePalette Default => All[0];
